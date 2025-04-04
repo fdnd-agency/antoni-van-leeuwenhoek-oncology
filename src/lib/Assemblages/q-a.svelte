@@ -7,6 +7,7 @@
   let slug = $page.url.pathname;
 
   export let comments = [];
+  export let parsedChapters = [];
 
   let loading = false;
   const addComment = () => {
@@ -43,7 +44,7 @@
     <ul>
       {#each [...comments].reverse() as comment}
         {#if comment.parent_id === null}
-        <li><Comment {comment}/></li>
+        <li><Comment {comment} {parsedChapters}/></li>
         {/if} 
       {/each}
     </ul>

@@ -5,12 +5,8 @@
   import { page } from '$app/stores';
   export let data;
   
-  
   const chapters = data.webinar.chapters;
-  console.log(chapters);
-
   const parsedChapters = JSON.parse(chapters);
-  console.log(parsedChapters);
 
   // Retrieves other data from diffrent tables through let and a joins structure
   let newestWebinars = data.webinars.slice(0,4).map(webinar => ({
@@ -37,18 +33,25 @@
   }
 
 // tijdelijke functie
-  import { onMount } from 'svelte';
-  onMount(() => {
-    const chapterButtons = document.querySelectorAll('.goto');
-    const video = document.querySelector('video');
-    
-    chapterButtons.forEach(button => {
+import { onMount } from 'svelte';
+
+onMount(() => {
+  const video = document.querySelector('video');
+  const chapterButtons = document.querySelectorAll('.goto');
+  const commentLinks = document.querySelectorAll('.time-link');
+
+  function addClickEventToButtons(buttons) {
+    buttons.forEach(button => {
       button.addEventListener('click', (event) => {
-        const chapterTime = parseInt(event.target.dataset.time, 10);
-        video.currentTime = chapterTime; 
+        const chapterTime = parseInt(event.target.dataset.time, 10);  
+        video.currentTime = chapterTime;
       });
     });
-  });
+  }
+
+  addClickEventToButtons(chapterButtons);
+  addClickEventToButtons(commentLinks);
+});
 
   // Test voor video tijd uit query parameter
   const videoStart = $page.url.searchParams.get('video-start');
@@ -97,9 +100,9 @@
     <ul>
       {#each parsedChapters as chapter}
         <li>
-          <a href="?video-start={chapter.time_seconds}" class="goto" data-time={chapter.time_seconds} data-sveltekit-noscroll>
-            <span>{chapter.title_number}</span>
-            <canvas></canvas>
+          <a href="?video-start={chapter.time_seconds}" class="goto" data-time={chapter.time_seconds} title="{chapter.title_number}" data-sveltekit-noscroll>
+            <span>{chapter.title_number.slice(7)}</span>
+            <div></div>
             <span>{chapter.title}</span>
           </a>
         </li>
@@ -167,7 +170,7 @@
 
   <div class='q-a'>
     <QandA 
-      comments = {data.comments} />
+      comments = {data.comments} parsedChapters={parsedChapters} />
   </div>
 
   <div class="watch-next">
@@ -246,34 +249,55 @@
 
   .chapters ul {
     display: flex;
+    overflow: auto;
   }
 
   .chapters ul li{
     display: flex;
-    max-width: var(--card-max-width);
+    min-width: 25%;
     flex-direction: column;
-    margin-right: 20px;
   }
 
   .chapters ul li .goto{
     display: flex;
+    align-items: center;
     width: 100%;
     height: auto;
-    flex-direction: column;
-    align-items: start;
+    flex-direction: column; 
     background-color: transparent;
+    text-decoration: none;
   }
 
-  .chapters ul li .goto canvas{
-    width: 248px;
-    height: 139px;
-    background-color: var(--background-category-color);
-    border-radius: var(--border-radius-sm);
+  .chapters ul li .goto div{
+    border-top: dotted 3px;
+    height: 3px;
+    width: 99%;
+    position: relative;
+    margin: 5px 0 2px 0;
+  }
+
+  .chapters ul li .goto div::after{
+    content: '';
+    display: inline-block;
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background-color: var(--primary-color);
+    border-radius: 50%;
+    bottom: -5px;
+    left: 50%;
+    translate: -50% 0;
+  } 
+
+  .chapters ul li .goto:hover div::after{
+    scale: 1.7;
+    transition: .2s;
   }
 
   .chapters ul li .goto span:first-child{
     font-size: var(--font-size-xl);
     color: var(--primary-color);
+    position: relative;
   }
 
   .chapters ul li .goto span:last-child{

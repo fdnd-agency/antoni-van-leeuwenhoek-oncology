@@ -12,7 +12,10 @@
         <a href="/">Cookiestatement</a>
       </li>
     </ul>
-    <img src="/images/AVL-Logo-white.svg" alt="Antoni van Leeuwenhoek">
+    <picture>
+      <img src="/images/AVL-Logo-white.svg" alt="Antoni van Leeuwenhoek">
+      <img src="/images/kemenkessardjito.png" alt="kemenkes ziekenhuis">
+    </picture>
   </div>
 </footer>
 

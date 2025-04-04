@@ -4,12 +4,55 @@
   import {Like, Liked, LoaderSpin, LoaderDots} from '$lib/index.js';
 
   export let comment;
+  export let parsedChapters = [];
 
   let content = '';
   let slug = $page.url.pathname;
   let loadingLike = false;
   let loadingSend = false;
   let liked = false;
+
+  function timeToSeconds(time) {
+    const parts = time.split(':').map(Number).reverse();
+    let seconds = 0;
+    if (parts[0]) seconds += parts[0];
+    if (parts[1]) seconds += parts[1] * 60;
+    if (parts[2]) seconds += parts[2] * 3600;
+    return seconds;
+  }
+
+  function getCurrentChapter(seconds) {
+    for (let i = 0; i < parsedChapters.length; i++) {
+      const currentChapter = parsedChapters[i];
+      const nextChapter = parsedChapters[i + 1];
+
+      if (seconds >= currentChapter.time_seconds && (!nextChapter || seconds < nextChapter.time_seconds)) {
+        return currentChapter.title_number; // Return the title_number of the current chapter
+      }
+    }
+    return "doesnt belong to a chapter"; // No matching chapter
+  }
+
+  function parseCommentContent(content) {
+    const timeRegex = /\b\d{1,2}:\d{2}(?::\d{2})?\b/g;
+    return content.replace(timeRegex, (match) => {
+      const seconds = timeToSeconds(match);
+      return `<a href="?video-start=${seconds}" class="time-link" data-time="${seconds}">${match}</a>`;
+    });
+  }
+
+  $: parsedContent = parseCommentContent(comment.content);
+
+  $: currentChapter = (() => {
+    const timeMatches = comment.content.match(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g); // Find all timestamps
+    if (timeMatches) {
+      return timeMatches.map((time) => {
+        const seconds = timeToSeconds(time); // Convert each timestamp to seconds
+        return getCurrentChapter(seconds); // Get the chapter for each timestamp
+      }).filter((chapter) => chapter !== "doesn't belong to a chapter"); // Filter out unmatched timestamps
+    }
+    return [];
+  })();
 
   const likeComment = () => {
     loadingLike = true;
@@ -35,20 +78,32 @@
     <section class="comment-head">
       {#if comment.user_id === null}
         <img src="/images/profilepic.png" alt="error" width="40" height="40">
-        <h4>Name Surname</h4>
+        <h4>
+          Name Surname
+          {#if currentChapter}
+            <span class="chapter-info">({currentChapter})</span>
+          {/if}
+        </h4>
       {:else}
         <img src="https://fdnd-agency.directus.app/assets/{comment.user_id.profile_picture.id}?format=avif" alt="{comment.user_id.profile_picture.title}" width="40" height="40">
-        <h4>{comment.user_id.fullname}</h4>
+        <h4>
+          {comment.user_id.fullname}
+          {#if currentChapter}
+            <span class="chapter-info">({currentChapter})</span>
+          {/if}
+        </h4>
       {/if}
-
+  
       {#if comment.time_posted === null}
         <time>hours ago</time>
-      {:else}  
+      {:else}
         <time>{comment.time_posted}</time>
       {/if}
     </section>
-
-    <p class="comment-content">{comment.content}</p>
+  
+    <p class="comment-content">
+      {@html parsedContent}
+    </p>
 
     <div class="comment-response">
       <form action="{slug}?/like" method="POST" class="form-like" use:enhance={likeComment}>
@@ -116,6 +171,12 @@
 {/if}
 
 <style>
+
+.chapter-info {
+    font-size: var(--font-size-sm);
+    color: var(--primary-color);
+    margin-left: 0.5rem;
+  }
   .comment-container {
     margin-block: 1rem;
     list-style: none;
@@ -166,6 +227,12 @@
   .comment-content {
     font-size: var(--font-size-lg);
     padding-block: var(--gap);
+  }
+
+  .comment-content :global(a) {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
   }
   
   .comment-response {
